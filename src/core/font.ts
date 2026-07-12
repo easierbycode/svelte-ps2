@@ -1,8 +1,8 @@
 // AthenaEnv Font: new Font(path), font.print(x, y, text[, color]),
 // font.getTextSize(text) -> { width, height }.
 
-import type { PS2Host, HostFontHandle } from './host'
-import { unpackColor, type PS2ColorValue } from './color'
+import type { PS2Host, HostFontHandle } from './host.ts'
+import { unpackColor, type PS2ColorValue } from './color.ts'
 
 export interface PS2FontClass {
   new (path: string): PS2FontInstance

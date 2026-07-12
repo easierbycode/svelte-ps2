@@ -3,7 +3,7 @@
 //   std.open(path, 'w') -> { puts(s), close() }
 // Writes are buffered and handed to the host on close().
 
-import type { PS2Host } from './host'
+import type { PS2Host } from './host.ts'
 
 export interface PS2Std {
   loadFile(path: string): string | null

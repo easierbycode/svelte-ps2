@@ -1,8 +1,9 @@
 // AthenaEnv v4 Pads module (OOP API from v3.0 onward): Pads.get(port)
-// returns a pad object with pressed()/justPressed(). Button constants are
-// the real PS2 digital button masks.
+// returns a pad object with pressed()/justPressed() plus lx/ly/rx/ry analog
+// values (-127..127, up/left negative), answered live by the host. Button
+// constants are the real PS2 digital button masks.
 
-import type { PS2Host } from './host'
+import type { PS2Host } from './host.ts'
 
 export const PAD_BUTTONS = {
   SELECT: 0x0001,
@@ -62,10 +63,18 @@ export function makePads(host: PS2Host): PS2Pads {
   const makePad = (): PS2Pad => ({
     btns: 0,
     old_btns: 0,
-    lx: 0,
-    ly: 0,
-    rx: 0,
-    ry: 0,
+    get lx() {
+      return host.padAxis?.('lx') ?? 0
+    },
+    get ly() {
+      return host.padAxis?.('ly') ?? 0
+    },
+    get rx() {
+      return host.padAxis?.('rx') ?? 0
+    },
+    get ry() {
+      return host.padAxis?.('ry') ?? 0
+    },
     update() {
       this.old_btns = this.btns
     },

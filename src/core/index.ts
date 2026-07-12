@@ -1,21 +1,21 @@
-export { createRuntime } from './runtime'
-export type { PS2Runtime, PS2Screen, PS2Draw } from './runtime'
-export { Color, unpackColor } from './color'
-export type { PS2ColorValue } from './color'
-export { PAD_BUTTONS, makePads } from './pads'
-export type { PS2Pads, PS2Pad } from './pads'
-export { makeImageClass } from './image'
-export type { PS2ImageClass, PS2ImageInstance } from './image'
-export { makeFontClass } from './font'
-export type { PS2FontClass, PS2FontInstance } from './font'
-export { makeStd } from './std'
-export type { PS2Std, PS2File } from './std'
-export { Timer } from './timer'
-export { LINEAR, NEAREST } from './constants'
+export { createRuntime } from './runtime.ts'
+export type { PS2Runtime, PS2Screen, PS2Draw } from './runtime.ts'
+export { Color, unpackColor } from './color.ts'
+export type { PS2ColorValue } from './color.ts'
+export { PAD_BUTTONS, makePads } from './pads.ts'
+export type { PS2Pads, PS2Pad } from './pads.ts'
+export { makeImageClass } from './image.ts'
+export type { PS2ImageClass, PS2ImageInstance } from './image.ts'
+export { makeFontClass } from './font.ts'
+export type { PS2FontClass, PS2FontInstance } from './font.ts'
+export { makeStd } from './std.ts'
+export type { PS2Std, PS2File } from './std.ts'
+export { Timer } from './timer.ts'
+export { LINEAR, NEAREST } from './constants.ts'
 export type {
   PS2Host,
   RGBA,
   HostImageHandle,
   HostFontHandle,
   DrawImageOptions,
-} from './host'
+} from './host.ts'

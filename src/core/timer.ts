@@ -2,14 +2,24 @@
 //   const t = Timer.new(); Timer.getTime(t); Timer.setTime(t, us);
 //   Timer.pause/resume/reset/destroy(t)
 
-interface TimerState {
+export interface TimerState {
   base: number // performance.now() ms at (virtual) time zero
   pausedAt: number | null
 }
 
+export interface PS2TimerModule {
+  'new'(): TimerState
+  getTime(t: TimerState): number
+  setTime(t: TimerState, us: number): void
+  pause(t: TimerState): void
+  resume(t: TimerState): void
+  reset(t: TimerState): void
+  destroy(t: TimerState): void
+}
+
 const nowMs = () => (typeof performance !== 'undefined' ? performance.now() : Date.now())
 
-export const Timer = {
+export const Timer: PS2TimerModule = {
   new(): TimerState {
     return { base: nowMs(), pausedAt: null }
   },

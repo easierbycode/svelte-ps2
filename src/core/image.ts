@@ -1,9 +1,12 @@
 // AthenaEnv Image: source-rect crop via startx/starty/endx/endy (swapping
 // start/end flips), destination size via width/height, draw(x, y) or
-// draw(x, y, w, h). filter takes the NEAREST/LINEAR globals.
+// draw(x, y, w, h). filter takes the NEAREST/LINEAR globals. color is an
+// Athena color word (Color.new) multiplied over the texture â€” white with
+// alpha 128 (the default) draws unmodified; lower alpha fades.
 
-import type { PS2Host, HostImageHandle } from './host'
-import { LINEAR, NEAREST } from './constants'
+import type { PS2Host, HostImageHandle } from './host.ts'
+import { LINEAR, NEAREST } from './constants.ts'
+import { Color, unpackColor, type PS2ColorValue } from './color.ts'
 
 export interface PS2ImageClass {
   new (path: string): PS2ImageInstance
@@ -17,6 +20,7 @@ export interface PS2ImageInstance {
   endx: number
   endy: number
   filter: number
+  color: PS2ColorValue
   draw(x: number, y: number, w?: number, h?: number): void
 }
 
@@ -29,6 +33,7 @@ export function makeImageClass(host: PS2Host): PS2ImageClass {
     endx: number
     endy: number
     filter = LINEAR
+    color = Color.new(255, 255, 255, 128)
 
     #handle: HostImageHandle
 
@@ -55,6 +60,7 @@ export function makeImageClass(host: PS2Host): PS2ImageClass {
         nearest: this.filter === NEAREST,
         flipX,
         flipY,
+        color: unpackColor(this.color),
       })
     }
   }

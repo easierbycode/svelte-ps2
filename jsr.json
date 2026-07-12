@@ -1,10 +1,17 @@
 {
   "name": "@easierbycode/svelte-ps2",
   "version": "1.0.0",
+  "license": "MIT",
   "exports": {
-    ".": "./src/core/index.ts"
+    ".": "./src/index.ts",
+    "./core": "./src/core/index.ts",
+    "./phaser": "./src/phaser/index.ts"
   },
+  "imports": {
+    "phaser": "npm:phaser@^4.0.0"
+  },
+  "nodeModulesDir": "auto",
   "publish": {
-    "include": ["src/core/**", "LICENSE", "README.md"]
+    "include": ["src/**", "LICENSE", "README.md", "jsr.json"]
   }
 }

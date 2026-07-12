@@ -13,12 +13,14 @@
 //   // scene.update(): runtime.tick()
 
 import Phaser from 'phaser'
-import type { PS2Host, RGBA, HostImageHandle, HostFontHandle, DrawImageOptions } from '../core/host'
+import type { PS2Host, RGBA, HostImageHandle, HostFontHandle, DrawImageOptions } from '../core/host.ts'
 
 /** Answers PS2 button-mask queries (Pads.* masks) from the web page's inputs. */
 export interface PadSource {
   held(mask: number): boolean
   fresh(mask: number): boolean
+  /** analog stick axis, web Gamepad convention (-1..1, up/left negative) */
+  axis?(name: 'lx' | 'ly' | 'rx' | 'ry'): number
 }
 
 export interface PhaserFontConfig {
@@ -150,6 +152,14 @@ export function createPhaserHost(options: PhaserHostOptions): { host: PS2Host; d
       img.setFlip(opts.flipX, opts.flipY)
       img.setPosition(dx, dy)
       img.setDisplaySize(dw, dh)
+      // pooled images keep their last tint/alpha â€” reset every draw
+      const color = opts.color
+      img.setAlpha(color?.a ?? 1)
+      if (color && (color.r !== 255 || color.g !== 255 || color.b !== 255)) {
+        img.setTint(colorToInt(color))
+      } else {
+        img.clearTint()
+      }
       img.setDepth(depth++)
       img.setVisible(true)
     },
@@ -198,6 +208,11 @@ export function createPhaserHost(options: PhaserHostOptions): { host: PS2Host; d
 
     padFresh(mask) {
       return options.pads.fresh(mask)
+    },
+
+    padAxis(axis) {
+      // web -1..1 â†’ AthenaEnv's -127..127
+      return Math.round((options.pads.axis?.(axis) ?? 0) * 127)
     },
 
     loadFile(path) {

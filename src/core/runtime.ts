@@ -1,18 +1,18 @@
-// createRuntime(host) — builds the AthenaEnv v4 global surface over a host.
+// createRuntime(host) â€” builds the AthenaEnv v4 global surface over a host.
 //
 // AthenaEnv is immediate-mode: Screen.display(cb) registers the per-frame
 // callback and the runtime redraws everything inside it. Here the host's
 // game loop drives the same callback via runtime.tick().
 
-import type { PS2Host } from './host'
-import { Color } from './color'
-import { makePads, type PS2Pads } from './pads'
-import { makeImageClass, type PS2ImageClass } from './image'
-import { makeFontClass, type PS2FontClass } from './font'
-import { makeStd, type PS2Std } from './std'
-import { Timer } from './timer'
-import { LINEAR, NEAREST } from './constants'
-import { unpackColor, type PS2ColorValue } from './color'
+import type { PS2Host } from './host.ts'
+import { Color } from './color.ts'
+import { makePads, type PS2Pads } from './pads.ts'
+import { makeImageClass, type PS2ImageClass } from './image.ts'
+import { makeFontClass, type PS2FontClass } from './font.ts'
+import { makeStd, type PS2Std } from './std.ts'
+import { Timer } from './timer.ts'
+import { LINEAR, NEAREST } from './constants.ts'
+import { unpackColor, type PS2ColorValue } from './color.ts'
 
 export interface PS2Screen {
   setVSync(on: boolean): void

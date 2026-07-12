@@ -26,6 +26,8 @@ export interface DrawImageOptions {
   nearest: boolean
   flipX: boolean
   flipY: boolean
+  /** Image.color tint — white (255,255,255) means no tint; a < 1 fades */
+  color?: RGBA
 }
 
 export interface PS2Host {
@@ -63,6 +65,8 @@ export interface PS2Host {
   padHeld(mask: number): boolean
   /** did the PS2 button go down this frame? (edge) */
   padFresh(mask: number): boolean
+  /** analog stick axis in AthenaEnv's range (-127..127, 0 centered, up/left negative) */
+  padAxis?(axis: 'lx' | 'ly' | 'rx' | 'ry'): number
 
   /** std.loadFile — return null when the file doesn't exist */
   loadFile(path: string): string | null

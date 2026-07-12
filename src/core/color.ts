@@ -3,13 +3,25 @@
 // values above 128 over-brighten on real GS hardware. The full 0..255 is
 // stored so values round-trip, but hosts render anything >= 128 as opaque.
 
-import type { RGBA } from './host'
+import type { RGBA } from './host.ts'
 
 export type PS2ColorValue = number
 
+export interface PS2ColorModule {
+  'new'(r: number, g: number, b: number, a?: number): PS2ColorValue
+  getR(c: PS2ColorValue): number
+  getG(c: PS2ColorValue): number
+  getB(c: PS2ColorValue): number
+  getA(c: PS2ColorValue): number
+  setR(c: PS2ColorValue, v: number): PS2ColorValue
+  setG(c: PS2ColorValue, v: number): PS2ColorValue
+  setB(c: PS2ColorValue, v: number): PS2ColorValue
+  setA(c: PS2ColorValue, v: number): PS2ColorValue
+}
+
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, Math.round(v)))
 
-export const Color = {
+export const Color: PS2ColorModule = {
   new(r: number, g: number, b: number, a = 128): PS2ColorValue {
     return (
       ((clamp(a, 0, 255) & 0xff) << 24) |
@@ -46,7 +58,7 @@ export const Color = {
   },
 }
 
-/** Unpack to host RGBA — PS2 alpha 0..128 maps to 0..1 (128 = opaque). */
+/** Unpack to host RGBA â€” PS2 alpha 0..128 maps to 0..1 (128 = opaque). */
 export function unpackColor(c: PS2ColorValue): RGBA {
   return {
     r: c & 0xff,
