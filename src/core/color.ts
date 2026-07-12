@@ -1,6 +1,7 @@
 // AthenaEnv Color module. Colors are packed u32s (ABGR byte order like
-// Athena's GS color words); alpha follows the PS2 convention 0..128 where
-// 128 is fully opaque (Athena's default when omitted).
+// Athena's GS color words). PS2 alpha semantics: 0x80 (128) is "1.0";
+// values above 128 over-brighten on real GS hardware. The full 0..255 is
+// stored so values round-trip, but hosts render anything >= 128 as opaque.
 
 import type { RGBA } from './host'
 
@@ -11,7 +12,7 @@ const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, M
 export const Color = {
   new(r: number, g: number, b: number, a = 128): PS2ColorValue {
     return (
-      ((clamp(a, 0, 128) & 0xff) << 24) |
+      ((clamp(a, 0, 255) & 0xff) << 24) |
       ((clamp(b, 0, 255) & 0xff) << 16) |
       ((clamp(g, 0, 255) & 0xff) << 8) |
       (clamp(r, 0, 255) & 0xff)
@@ -41,7 +42,7 @@ export const Color = {
     return ((c & 0xff00ffff) | ((clamp(v, 0, 255) & 0xff) << 16)) >>> 0
   },
   setA(c: PS2ColorValue, v: number): PS2ColorValue {
-    return ((c & 0x00ffffff) | ((clamp(v, 0, 128) & 0xff) << 24)) >>> 0
+    return ((c & 0x00ffffff) | ((clamp(v, 0, 255) & 0xff) << 24)) >>> 0
   },
 }
 

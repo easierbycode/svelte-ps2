@@ -34,6 +34,12 @@ export interface PhaserHostOptions {
   scene: Phaser.Scene
   /** virtual PS2 screen mode, default 640x448 */
   screen?: { width: number; height: number }
+  /**
+   * AthenaEnv clears the frame before each Screen.display callback; the
+   * host mirrors that with an opaque rect (default black). Pass false to
+   * let the Phaser scene show through instead.
+   */
+  clear?: false | { r: number; g: number; b: number }
   pads: PadSource
   /** map an Athena asset path (e.g. "assets/tiles/tiles.png") to a Phaser texture key */
   resolveTexture: (path: string) => string
@@ -84,6 +90,8 @@ export function createPhaserHost(options: PhaserHostOptions): { host: PS2Host; d
     for (let i = cursor; i < pool.length && pool[i].visible; i++) pool[i].setVisible(false)
   }
 
+  const clearColor = options.clear === false ? null : { a: 1, ...(options.clear ?? { r: 0, g: 0, b: 0 }) }
+
   const host: PS2Host = {
     screen,
 
@@ -92,6 +100,7 @@ export function createPhaserHost(options: PhaserHostOptions): { host: PS2Host; d
       imageCursor = 0
       textCursor = 0
       depth = 0
+      if (clearColor) this.drawRect(0, 0, screen.width, screen.height, clearColor)
     },
 
     endFrame() {
