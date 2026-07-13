@@ -1,7 +1,9 @@
 // AthenaEnv v4 Pads module (OOP API from v3.0 onward): Pads.get(port)
 // returns a pad object with pressed()/justPressed() plus lx/ly/rx/ry analog
-// values (-127..127, up/left negative), answered live by the host. Button
-// constants are the real PS2 digital button masks.
+// values (AthenaEnv's -127..128 range, up/left negative), answered live by
+// the host. Assigning an axis (the common deadzone idiom `pad.lx = 0`)
+// sticks until update() refreshes it, like Athena's snapshot fields.
+// Button constants are the real PS2 digital button masks.
 
 import type { PS2Host } from './host.ts'
 
@@ -60,31 +62,54 @@ export interface PS2Pads {
 }
 
 export function makePads(host: PS2Host): PS2Pads {
-  const makePad = (): PS2Pad => ({
-    btns: 0,
-    old_btns: 0,
-    get lx() {
-      return host.padAxis?.('lx') ?? 0
-    },
-    get ly() {
-      return host.padAxis?.('ly') ?? 0
-    },
-    get rx() {
-      return host.padAxis?.('rx') ?? 0
-    },
-    get ry() {
-      return host.padAxis?.('ry') ?? 0
-    },
-    update() {
-      this.old_btns = this.btns
-    },
-    pressed(mask: number) {
-      return host.padHeld(mask)
-    },
-    justPressed(mask: number) {
-      return host.padFresh(mask)
-    },
-  })
+  const makePad = (): PS2Pad => {
+    // assigned axis values shadow the live host reading until update()
+    type Axis = 'lx' | 'ly' | 'rx' | 'ry'
+    const override: Partial<Record<Axis, number>> = {}
+    const axis = (name: Axis) => override[name] ?? host.padAxis?.(name) ?? 0
+
+    return {
+      btns: 0,
+      old_btns: 0,
+      get lx() {
+        return axis('lx')
+      },
+      set lx(v: number) {
+        override.lx = v
+      },
+      get ly() {
+        return axis('ly')
+      },
+      set ly(v: number) {
+        override.ly = v
+      },
+      get rx() {
+        return axis('rx')
+      },
+      set rx(v: number) {
+        override.rx = v
+      },
+      get ry() {
+        return axis('ry')
+      },
+      set ry(v: number) {
+        override.ry = v
+      },
+      update() {
+        this.old_btns = this.btns
+        delete override.lx
+        delete override.ly
+        delete override.rx
+        delete override.ry
+      },
+      pressed(mask: number) {
+        return host.padHeld(mask)
+      },
+      justPressed(mask: number) {
+        return host.padFresh(mask)
+      },
+    }
+  }
 
   return {
     ...PAD_BUTTONS,

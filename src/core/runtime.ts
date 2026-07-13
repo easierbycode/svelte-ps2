@@ -1,4 +1,4 @@
-// createRuntime(host) â€” builds the AthenaEnv v4 global surface over a host.
+// createRuntime(host) — builds the AthenaEnv v4 global surface over a host.
 //
 // AthenaEnv is immediate-mode: Screen.display(cb) registers the per-frame
 // callback and the runtime redraws everything inside it. Here the host's

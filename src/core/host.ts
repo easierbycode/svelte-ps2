@@ -65,7 +65,7 @@ export interface PS2Host {
   padHeld(mask: number): boolean
   /** did the PS2 button go down this frame? (edge) */
   padFresh(mask: number): boolean
-  /** analog stick axis in AthenaEnv's range (-127..127, 0 centered, up/left negative) */
+  /** analog stick axis in AthenaEnv's range (-127..128, 0 centered, up/left negative) */
   padAxis?(axis: 'lx' | 'ly' | 'rx' | 'ry'): number
 
   /** std.loadFile — return null when the file doesn't exist */

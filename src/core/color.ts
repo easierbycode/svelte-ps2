@@ -58,7 +58,7 @@ export const Color: PS2ColorModule = {
   },
 }
 
-/** Unpack to host RGBA â€” PS2 alpha 0..128 maps to 0..1 (128 = opaque). */
+/** Unpack to host RGBA — PS2 alpha 0..128 maps to 0..1 (128 = opaque). */
 export function unpackColor(c: PS2ColorValue): RGBA {
   return {
     r: c & 0xff,

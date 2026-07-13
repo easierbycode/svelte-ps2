@@ -152,7 +152,7 @@ export function createPhaserHost(options: PhaserHostOptions): { host: PS2Host; d
       img.setFlip(opts.flipX, opts.flipY)
       img.setPosition(dx, dy)
       img.setDisplaySize(dw, dh)
-      // pooled images keep their last tint/alpha â€” reset every draw
+      // pooled images keep their last tint/alpha — reset every draw
       const color = opts.color
       img.setAlpha(color?.a ?? 1)
       if (color && (color.r !== 255 || color.g !== 255 || color.b !== 255)) {
@@ -211,8 +211,9 @@ export function createPhaserHost(options: PhaserHostOptions): { host: PS2Host; d
     },
 
     padAxis(axis) {
-      // web -1..1 â†’ AthenaEnv's -127..127
-      return Math.round((options.pads.axis?.(axis) ?? 0) * 127)
+      // web -1..1 to AthenaEnv's asymmetric -127..128 (raw 0..255 - 127)
+      const v = options.pads.axis?.(axis) ?? 0
+      return Math.round(v < 0 ? v * 127 : v * 128)
     },
 
     loadFile(path) {
