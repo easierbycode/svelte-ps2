@@ -58,8 +58,9 @@ export interface PS2Host {
   ): void
 
   createFont(path: string): HostFontHandle
-  drawText(font: HostFontHandle, x: number, y: number, text: string, color?: RGBA): void
-  measureText(font: HostFontHandle, text: string): { width: number; height: number }
+  /** scale is the Font instance's Athena-style .scale (1 = the font's natural size) */
+  drawText(font: HostFontHandle, x: number, y: number, text: string, color?: RGBA, scale?: number): void
+  measureText(font: HostFontHandle, text: string, scale?: number): { width: number; height: number }
 
   /** is the PS2 button (Pads.* mask) held this frame? */
   padHeld(mask: number): boolean
