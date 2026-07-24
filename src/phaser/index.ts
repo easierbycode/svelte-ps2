@@ -152,7 +152,7 @@ export function createPhaserHost(options: PhaserHostOptions): { host: PS2Host; d
       img.setFlip(opts.flipX, opts.flipY)
       img.setPosition(dx, dy)
       img.setDisplaySize(dw, dh)
-      // pooled images keep their last tint/alpha â€” reset every draw
+      // pooled images keep their last tint/alpha — reset every draw
       const color = opts.color
       img.setAlpha(color?.a ?? 1)
       if (color && (color.r !== 255 || color.g !== 255 || color.b !== 255)) {
@@ -169,7 +169,7 @@ export function createPhaserHost(options: PhaserHostOptions): { host: PS2Host; d
       return { key: config.key, size: config.size, scale: config.scale ?? 1 }
     },
 
-    drawText(font, x, y, text, color) {
+    drawText(font, x, y, text, color, scale) {
       const f = font as PhaserFontHandle
       let t = texts[textCursor]
       if (!t) {
@@ -179,7 +179,7 @@ export function createPhaserHost(options: PhaserHostOptions): { host: PS2Host; d
       textCursor++
       if (t.font !== f.key) t.setFont(f.key, f.size)
       t.setText(text)
-      t.setScale(f.scale)
+      t.setScale(f.scale * (scale ?? 1))
       t.setPosition(x, y)
       if (color) {
         t.setTint(colorToInt(color))
@@ -192,14 +192,15 @@ export function createPhaserHost(options: PhaserHostOptions): { host: PS2Host; d
       t.setVisible(true)
     },
 
-    measureText(font, text) {
+    measureText(font, text, scale) {
       const f = font as PhaserFontHandle
       if (!measurer) {
         measurer = scene.add.bitmapText(0, 0, f.key, '', f.size).setVisible(false)
       }
       if (measurer.font !== f.key) measurer.setFont(f.key, f.size)
       measurer.setText(text)
-      return { width: measurer.width * f.scale, height: measurer.height * f.scale }
+      const s = f.scale * (scale ?? 1)
+      return { width: measurer.width * s, height: measurer.height * s }
     },
 
     padHeld(mask) {
@@ -211,8 +212,9 @@ export function createPhaserHost(options: PhaserHostOptions): { host: PS2Host; d
     },
 
     padAxis(axis) {
-      // web -1..1 â†’ AthenaEnv's -127..127
-      return Math.round((options.pads.axis?.(axis) ?? 0) * 127)
+      // web -1..1 to AthenaEnv's asymmetric -127..128 (raw 0..255 - 127)
+      const v = options.pads.axis?.(axis) ?? 0
+      return Math.round(v < 0 ? v * 127 : v * 128)
     },
 
     loadFile(path) {
@@ -237,3 +239,6 @@ export function createPhaserHost(options: PhaserHostOptions): { host: PS2Host; d
 
   return { host, destroy }
 }
+
+export { registerCanvasBitmapFont } from './retro-font.ts'
+export type { CanvasBitmapFontOptions } from './retro-font.ts'

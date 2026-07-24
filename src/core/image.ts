@@ -1,7 +1,7 @@
 // AthenaEnv Image: source-rect crop via startx/starty/endx/endy (swapping
 // start/end flips), destination size via width/height, draw(x, y) or
 // draw(x, y, w, h). filter takes the NEAREST/LINEAR globals. color is an
-// Athena color word (Color.new) multiplied over the texture â€” white with
+// Athena color word (Color.new) multiplied over the texture — white with
 // alpha 128 (the default) draws unmodified; lower alpha fades.
 
 import type { PS2Host, HostImageHandle } from './host.ts'

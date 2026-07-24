@@ -1,6 +1,6 @@
 {
   "name": "5velte-ps2",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Svelte 5 era AthenaEnv v4 (PS2) compatibility layer — run AthenaEnv-style code on Phaser 4 in the browser, and port code between Phaser and the PS2",
   "type": "module",
   "license": "MIT",
@@ -28,6 +28,18 @@
     "./phaser": {
       "types": "./src/phaser/index.ts",
       "default": "./src/phaser/index.ts"
+    },
+    "./toolkit": {
+      "types": "./src/toolkit/index.ts",
+      "default": "./src/toolkit/index.ts"
+    },
+    "./native": {
+      "types": "./src/native/index.ts",
+      "default": "./src/native/index.ts"
+    },
+    "./ps2-sp": {
+      "types": "./src/ps2-sp/index.ts",
+      "default": "./src/ps2-sp/index.ts"
     }
   },
   "peerDependencies": {
@@ -37,5 +49,9 @@
     "phaser": {
       "optional": true
     }
+  },
+  "devDependencies": {
+    "phaser": "^4.2.1",
+    "vite": "^6.4.3"
   }
 }

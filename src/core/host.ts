@@ -58,14 +58,15 @@ export interface PS2Host {
   ): void
 
   createFont(path: string): HostFontHandle
-  drawText(font: HostFontHandle, x: number, y: number, text: string, color?: RGBA): void
-  measureText(font: HostFontHandle, text: string): { width: number; height: number }
+  /** scale is the Font instance's Athena-style .scale (1 = the font's natural size) */
+  drawText(font: HostFontHandle, x: number, y: number, text: string, color?: RGBA, scale?: number): void
+  measureText(font: HostFontHandle, text: string, scale?: number): { width: number; height: number }
 
   /** is the PS2 button (Pads.* mask) held this frame? */
   padHeld(mask: number): boolean
   /** did the PS2 button go down this frame? (edge) */
   padFresh(mask: number): boolean
-  /** analog stick axis in AthenaEnv's range (-127..127, 0 centered, up/left negative) */
+  /** analog stick axis in AthenaEnv's range (-127..128, 0 centered, up/left negative) */
   padAxis?(axis: 'lx' | 'ly' | 'rx' | 'ry'): number
 
   /** std.loadFile — return null when the file doesn't exist */

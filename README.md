@@ -15,12 +15,31 @@ the same globals natively and the shim disappears.
   AthenaEnv surface over a small `PS2Host` interface (draw, input, storage).
   PS2 semantics are preserved: alpha is 0–128 (128 = opaque), image flips are
   expressed by swapping `startx`/`endx`, `Screen.getMode()` reports the
-  virtual 640×448 mode.
+  virtual 640×448 mode. Fonts carry Athena's mutable `.scale`/`.color`.
 - `src/phaser/` — the Phaser 4 host. Immediate-mode calls render through
   pooled `Graphics`/`Image`/`BitmapText` objects with painter-order depths;
   crops become dynamic texture frames. You supply `resolveTexture`,
   `resolveFont`, and a `PadSource` that answers PS2 button masks from your
-  page's inputs.
+  page's inputs. `registerCanvasBitmapFont(scene, key)` generates a
+  canvas-backed bitmap font so `new Font('default')` needs no font asset.
+- `src/toolkit/` — host-agnostic game utilities written against the
+  `PS2Runtime` surface (they run on the browser shim and on real hardware):
+  `AtlasManager` (PNG+JSON texture atlases with crop-swap flips),
+  `TweenManager`, `Scheduler` (delayed/repeating calls), `SceneManager`
+  (fade transitions), `Viewport` (game→screen mapping + letterbox),
+  `FixedStep` (fixed-timestep update loop), and sprite/AABB helpers.
+- `src/native/` — `createNativeRuntime()` assembles a `PS2Runtime` from real
+  AthenaEnv v4 globals, so code written for this module runs on a PS2
+  unchanged (bundle it to a single JS file for Athena, e.g. with esbuild);
+  `runNativeLoop(rt)` is the clear→callback→flip main loop.
+- `src/ps2-sp/` — a complete vertical-shooter game (ported from
+  2019-es7's `src/ps2` AthenaEnv port) built only on `PS2Runtime` +
+  toolkit: `createGame(runtime, options?)` registers the frame callback;
+  the host drives it with `runtime.tick()`. Game logic steps at a fixed
+  30 Hz regardless of the host frame rate.
+- `demo/` (not published) — browser demo of `ps2-sp`: `npx vite` from the
+  repo root, then open `http://localhost:5180` (`?scene=game` skips the
+  title, `?level=2028` swaps the Firebase level).
 
 ## Usage (Phaser 4 scene)
 
