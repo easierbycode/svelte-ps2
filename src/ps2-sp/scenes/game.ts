@@ -21,7 +21,7 @@ import {
   SCREEN_H,
   SCREEN_W,
 } from '../constants.ts'
-import type { StageData } from '../types.ts'
+import type { NetService, StageData } from '../types.ts'
 import {
   createPlayer,
   playerBarrierStart,
@@ -75,6 +75,8 @@ interface GameSceneState {
   projectiles: Projectile[]
   items: GameItem[]
   player: Player | null
+  // Remote P2 ship (netplay guest). Non-null only while a guest holds the seat.
+  player2: Player | null
   boss: Boss | null
   bossTimerStartFlg: number
   bossTimerCountDown: number
@@ -96,7 +98,7 @@ interface GameSceneState {
   turboBlackoutAlpha: number
 }
 
-export function createGameScene(ctx: GameContext): SceneHandlers {
+export function createGameScene(ctx: GameContext, net: NetService | null = null): SceneHandlers {
   const gs: GameSceneState = {
     waveInterval: 80,
     waveCount: 0,
@@ -107,6 +109,7 @@ export function createGameScene(ctx: GameContext): SceneHandlers {
     projectiles: [],
     items: [],
     player: null,
+    player2: null,
     boss: null,
     bossTimerStartFlg: 0,
     bossTimerCountDown: 99,
@@ -140,6 +143,7 @@ export function createGameScene(ctx: GameContext): SceneHandlers {
     gs.enemies = []
     gs.projectiles = []
     gs.items = []
+    gs.player2 = null
     gs.boss = null
     gs.bossTimerStartFlg = 0
     gs.bossTimerCountDown = 99
@@ -206,6 +210,17 @@ export function createGameScene(ctx: GameContext): SceneHandlers {
   }
 
   function update(): void {
+    // Publish the live scene to the netplay host each fixed step (no-op when
+    // not hosting). The host throttles this into RTDB snapshots.
+    net?.onSceneTick?.({
+      player: gs.player,
+      player2: gs.player2,
+      enemies: gs.enemies,
+      projectiles: gs.projectiles,
+      boss: gs.boss,
+      state: ctx.state,
+    })
+
     const p = gs.player
     if (!p) return
 
@@ -311,6 +326,12 @@ export function createGameScene(ctx: GameContext): SceneHandlers {
     // --- Update player ---
     playerLoop(ctx, p)
 
+    // --- Remote P2 ship (netplay guest) ---
+    updateRemotePlayer2()
+
+    // Player bullet sources: P1 always, plus P2 while a guest holds the seat.
+    const bulletArrays = gs.player2 ? [p.bullets, gs.player2.bullets] : [p.bullets]
+
     // --- Update HUD ---
     hudLoop(ctx.hud)
     ctx.hud.hpPercent = p.percent
@@ -359,30 +380,32 @@ export function createGameScene(ctx: GameContext): SceneHandlers {
         ctx.sound.playSfx('se_shoot')
       }
 
-      // Hit test: enemy vs player bullets
+      // Hit test: enemy vs player bullets (P1 + remote P2)
       if (!e.deadFlg && e.y >= 40 && e.x >= -e.width / 2 && e.x <= GW - e.width / 2) {
-        for (let j = p.bullets.length - 1; j >= 0; j--) {
-          const b = p.bullets[j]
-          if (hitTestAABB(e.x + e.hitX, e.y + e.hitY, e.hitW, e.hitH,
-            b.x, b.y, b.width, b.height)) {
-            enemyOnDamage(ctx, e, b.damage)
-            b.hp -= 1
-            if (b.hp <= 0) {
-              p.bullets.splice(j, 1)
-            }
-            ctx.sound.playSfx('se_damage')
-            if (e.deadFlg) {
-              hudOnEnemyKill(ctx.hud, e.score, e.spgage)
-              // Drop item
-              if (e.itemName) {
-                gs.items.push({
-                  x: e.x,
-                  y: e.y,
-                  name: e.itemName,
-                  frames: e.itemTexture || [],
-                  animFrame: 0,
-                  animCounter: 0,
-                })
+        for (const bullets of bulletArrays) {
+          for (let j = bullets.length - 1; j >= 0; j--) {
+            const b = bullets[j]
+            if (hitTestAABB(e.x + e.hitX, e.y + e.hitY, e.hitW, e.hitH,
+              b.x, b.y, b.width, b.height)) {
+              enemyOnDamage(ctx, e, b.damage)
+              b.hp -= 1
+              if (b.hp <= 0) {
+                bullets.splice(j, 1)
+              }
+              ctx.sound.playSfx('se_damage')
+              if (e.deadFlg) {
+                hudOnEnemyKill(ctx.hud, e.score, e.spgage)
+                // Drop item
+                if (e.itemName) {
+                  gs.items.push({
+                    x: e.x,
+                    y: e.y,
+                    name: e.itemName,
+                    frames: e.itemTexture || [],
+                    animFrame: 0,
+                    animCounter: 0,
+                  })
+                }
               }
             }
           }
@@ -416,25 +439,27 @@ export function createGameScene(ctx: GameContext): SceneHandlers {
         if (pd) gs.projectiles.push(createProjectile(pd))
       }
 
-      // Hit test: boss vs player bullets
+      // Hit test: boss vs player bullets (P1 + remote P2)
       if (!boss.deadFlg && boss.entryDone) {
-        for (let j = p.bullets.length - 1; j >= 0; j--) {
-          const b = p.bullets[j]
-          if (hitTestAABB(boss.x + boss.hitX, boss.y + boss.hitY,
-            boss.hitW, boss.hitH, b.x, b.y, b.width, b.height)) {
-            bossOnDamage(ctx, boss, b.damage)
-            b.hp -= 1
-            if (b.hp <= 0) {
-              p.bullets.splice(j, 1)
-            }
-            ctx.sound.playSfx('se_damage')
-            if (boss.deadFlg) {
-              hudOnEnemyKill(ctx.hud, boss.score, boss.spgage)
-              gs.theWorldFlg = 1
-              gs.resultTimer = 0
-              p.shootOn = 0
-              ctx.hud.spBtnActive = 0
-              ctx.sound.playSound('voice_ko')
+        for (const bullets of bulletArrays) {
+          for (let j = bullets.length - 1; j >= 0; j--) {
+            const b = bullets[j]
+            if (hitTestAABB(boss.x + boss.hitX, boss.y + boss.hitY,
+              boss.hitW, boss.hitH, b.x, b.y, b.width, b.height)) {
+              bossOnDamage(ctx, boss, b.damage)
+              b.hp -= 1
+              if (b.hp <= 0) {
+                bullets.splice(j, 1)
+              }
+              ctx.sound.playSfx('se_damage')
+              if (boss.deadFlg) {
+                hudOnEnemyKill(ctx.hud, boss.score, boss.spgage)
+                gs.theWorldFlg = 1
+                gs.resultTimer = 0
+                p.shootOn = 0
+                ctx.hud.spBtnActive = 0
+                ctx.sound.playSound('voice_ko')
+              }
             }
           }
         }
@@ -472,7 +497,7 @@ export function createGameScene(ctx: GameContext): SceneHandlers {
         continue
       }
 
-      // Hit test: projectile vs player
+      // Hit test: projectile vs player (P1 only — P2 is damage-immune in v1)
       if (!p.dead) {
         if (p.barrierFlg) {
           if (hitTestAABB(proj.x - proj.width / 2, proj.y - proj.height / 2,
@@ -598,6 +623,11 @@ export function createGameScene(ctx: GameContext): SceneHandlers {
     // Player
     if (gs.player) {
       playerDraw(ctx, gs.player)
+    }
+
+    // Remote P2 ship (netplay guest)
+    if (gs.player2) {
+      playerDraw(ctx, gs.player2)
     }
 
     // SP fire effect
@@ -752,6 +782,48 @@ export function createGameScene(ctx: GameContext): SceneHandlers {
 
     ctx.hud.spBtnActive = 1
     ctx.sound.playSound('voice_another_fighter')
+  }
+
+  // --- Remote P2 ship (netplay) ---
+
+  // Lazily spawn the second ship offset to the right when a guest takes the
+  // seat. Built from the same player recipe as P1 but damage-immune in v1.
+  function ensurePlayer2(): void {
+    const recipe = ctx.state.recipe
+    const playerData = recipe ? recipe.playerData : null
+    if (!playerData) return
+    const p2 = createPlayer(playerData)
+    playerSetUp(p2, ctx.state.playerMaxHp || playerData.maxHp || 0,
+      ctx.state.shootMode || 'normal', ctx.state.shootSpeed || 'speed_normal')
+    p2.x = GW * 0.65 - p2.width / 2
+    p2.y = GH - 96 - p2.height / 2
+    p2.targetX = GW * 0.65
+    p2.targetY = p2.y
+    p2.shootOn = 1
+    gs.player2 = p2
+  }
+
+  function updateRemotePlayer2(): void {
+    const frame = net?.remoteInput?.() ?? null
+    if (!frame) {
+      // Seat empty (or guest gone) — retire the ship.
+      gs.player2 = null
+      return
+    }
+    if (!gs.player2) ensurePlayer2()
+    const p2 = gs.player2
+    if (!p2) return
+    if (frame.touchX != null) {
+      p2.targetX = frame.touchX
+    } else {
+      if (frame.left) p2.targetX -= PLAYER_MOVE_SPEED
+      if (frame.right) p2.targetX += PLAYER_MOVE_SPEED
+    }
+    // Clamp to the playfield (same bounds as player 1)
+    if (p2.targetX < p2.hitW / 2) p2.targetX = p2.hitW / 2
+    if (p2.targetX > GW - p2.hitW / 2) p2.targetX = GW - p2.hitW / 2
+    p2.shootOn = frame.fire ? 1 : 0
+    playerLoop(ctx, p2)
   }
 
   // --- Player damage ---

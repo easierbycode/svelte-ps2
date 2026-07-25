@@ -55,6 +55,7 @@ export function createGame(rt: PS2Runtime, options: GameOptions = {}): GameHandl
     sound: options.sound ?? createNullSound(),
     level: options.level === undefined ? DEFAULT_LEVEL : options.level,
     startScene: options.startScene ?? SCENE_TITLE,
+    net: options.net ?? null,
   }
 
   const vp = new Viewport({
@@ -98,7 +99,7 @@ export function createGame(rt: PS2Runtime, options: GameOptions = {}): GameHandl
 
   scenes.register(SCENE_TITLE, createTitleScene(ctx))
   scenes.register(SCENE_ADV, createAdvScene(ctx))
-  scenes.register(SCENE_GAME, createGameScene(ctx))
+  scenes.register(SCENE_GAME, createGameScene(ctx, resolved.net))
   scenes.register(SCENE_CONTINUE, createContinueScene(ctx))
   scenes.register(SCENE_ENDING, createEndingScene(ctx))
 

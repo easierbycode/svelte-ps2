@@ -8,6 +8,12 @@ import { createRuntime, type PS2Runtime } from '../src/core/index.ts'
 import { createPhaserHost, registerCanvasBitmapFont } from '../src/phaser/index.ts'
 import { createGame, type GameOptions } from '../src/ps2-sp/index.ts'
 import { createKeyboardPads } from './pads.ts'
+import { createHostNet } from './net/host.ts'
+import { startNetView } from './net/netview.ts'
+import { becomeHost, checkRemoteSession, net, spectate } from './net/session.ts'
+
+// Discovery may hang on a flaky network — cap it so local play always boots.
+const NET_DISCOVERY_TIMEOUT_MS = 2500
 
 const TEXTURES: Record<string, string> = {
   'assets/game_ui.png': 'game_ui',
@@ -75,9 +81,42 @@ class DemoScene extends Phaser.Scene {
       }
     }
 
-    const game = createGame(rt, options)
     this.rt = rt
-    ;(window as unknown as Record<string, unknown>).ps2 = { rt, game }
+    // Async netplay discovery: rt.tick() below is a harmless no-op until a
+    // display callback is registered (by createGame or startNetView).
+    void this.bootNet(rt, options)
+  }
+
+  async bootNet(rt: PS2Runtime, options: GameOptions) {
+    let remoteLive = false
+    try {
+      await Promise.race([
+        checkRemoteSession(),
+        new Promise<never>((_resolve, reject) =>
+          setTimeout(() => reject(new Error('net discovery timeout')), NET_DISCOVERY_TIMEOUT_MS),
+        ),
+      ])
+      remoteLive = net.remoteLive
+    } catch {
+      // Any discovery failure (offline, timeout) falls through to local play.
+      remoteLive = false
+    }
+
+    if (remoteLive) {
+      // A live foreign session exists -> render it view-only. Enter as a
+      // spectator (START in the view can then take a free P2 seat or queue a
+      // quarter); do NOT create the local game.
+      await spectate()
+      startNetView(rt)
+      ;(window as unknown as Record<string, unknown>).ps2 = { rt, mode: 'netview' }
+      return
+    }
+
+    // Nothing live -> play locally and host so others can join / spectate.
+    const hostNet = createHostNet()
+    const game = createGame(rt, { ...options, net: hostNet })
+    ;(window as unknown as Record<string, unknown>).ps2 = { rt, game, net: hostNet }
+    void becomeHost('ps2sp')
   }
 
   update() {
