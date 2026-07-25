@@ -75,3 +75,39 @@ Same treatment as 5velte-ph4ser — the package ships raw TypeScript source:
 resolve: { dedupe: ['phaser', 'svelte'] },
 optimizeDeps: { exclude: ['svelte-phaser', '5velte-ps2'] },
 ```
+
+## Netplay
+
+The `demo/` app ships an optional crossplatform netplay layer
+(`demo/net/`) that lets the ps2-sp browser demo share a game with the Evil
+Invaders '95 web game over one Firebase Realtime Database. Both apps speak the
+exact same wire schema (`demo/net/protocol.ts`), so a player on either platform
+can drop into the other's game.
+
+**Roles.** Whoever starts a game first becomes the **host**: it runs the real
+game and streams ~10 Hz `Snapshot`s (players, enemies, bullets, HUD, quarter
+queue) to RTDB. The next player to open the game claims the free P2 seat and
+becomes a **guest**: it renders the host's snapshots and streams its own input
+back at ~20 Hz to drive a second ship in the host's game. Everyone after that is
+a **spectator** — view-only, but they can queue a *quarter* to take the P2 seat
+for the next game. Seat hand-off is race-safe (an ETag compare-and-set on
+`meta/p2`); on a post-gameover retry the first queued quarter rotates in.
+
+**Discovery.** On boot the demo checks `netplay/rooms/main` (with a 2.5 s
+timeout). If a live foreign session exists it renders it view-only via
+`demo/net/netview.ts`; otherwise it plays locally and hosts through
+`demo/net/host.ts`. Any discovery failure falls through to normal single-player,
+so offline play is never blocked.
+
+**Interop notes.** Coordinates are streamed in the host's world space and scaled
+into each client's own playfield (`sx = 256 / snap.w`), and entity *kinds* the
+local client doesn't recognise fall back to nearest local art. Firebase strips
+empty arrays and null fields from stored JSON, so every snapshot consumer
+defaults the collections (`players` / `enemies` / `bullets` / `fx` / `quarters`)
+to `[]` and `touchX` to `null`.
+
+**Native PS2.** AthenaEnv has no `fetch` or `EventSource`, so all network I/O is
+isolated in `demo/net/rtdb.ts` (a tiny REST + SSE client). A native PS2 adapter
+only has to reimplement those functions against a hardware transport shim; the
+protocol, session negotiation, host, and view layers are transport-agnostic and
+run unchanged.

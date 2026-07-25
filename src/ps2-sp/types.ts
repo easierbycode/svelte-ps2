@@ -186,6 +186,22 @@ export interface SoundPlayer {
   stopAllSounds(): void
 }
 
+// --- Netplay service ---
+
+/**
+ * Crossplatform netplay hook injected by the demo when it hosts a game.
+ * onSceneTick receives the game scene's live view each fixed step (the host
+ * turns it into a Snapshot); remoteInput returns the latest remote-P2 input
+ * frame (null when no guest holds the seat); onRetry rotates the quarter
+ * queue when the host restarts after a game over. All optional so the game
+ * runs identically when no service is wired.
+ */
+export interface NetService {
+  onSceneTick?(view: unknown): void
+  remoteInput?(): { left: boolean; right: boolean; fire: boolean; touchX: number | null } | null
+  onRetry?(): void
+}
+
 // --- createGame options ---
 
 export interface GameOptions {
@@ -194,10 +210,13 @@ export interface GameOptions {
   level?: FirebaseLevelSource | null
   /** Scene to boot into (testing hook). Defaults to the title scene. */
   startScene?: string
+  /** Crossplatform netplay hook (host snapshot publishing + remote P2 input). */
+  net?: NetService
 }
 
 export interface ResolvedGameOptions {
   sound: SoundPlayer
   level: FirebaseLevelSource | null
   startScene: string
+  net: NetService | null
 }

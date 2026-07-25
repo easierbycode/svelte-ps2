@@ -25,6 +25,7 @@ export {
 export type { GameContext } from './context.ts'
 export type {
   GameOptions,
+  NetService,
   GameState,
   HudState,
   GameInput,
