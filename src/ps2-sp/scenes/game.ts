@@ -723,8 +723,13 @@ export function createGameScene(ctx: GameContext, net: NetService | null = null)
       const code = String(row[i])
       if (code === '00') continue
 
-      const enemyType = code[0]
-      const itemCode = code.slice(1)
+      // A cell is `<type><item>`: the type is everything but the last
+      // character, the item digit the last one. This has to match the browser
+      // engine, which reads it the same way — a level with more than 26 enemy
+      // types names them `AA0`, `CM9` and so on, and reading only the first
+      // character spawned enemyA / enemyC in their place.
+      const enemyType = code.slice(0, -1)
+      const itemCode = code.slice(-1)
       const eData = recipe.enemyData['enemy' + enemyType]
       if (!eData) continue
 

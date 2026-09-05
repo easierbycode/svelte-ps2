@@ -76,7 +76,9 @@ export interface Boss {
 export function createBoss(ctx: GameContext, data: BossData, stageId: number): Boss {
   const b: Boss = {
     name: data.name || '',
-    atlas: 'game_asset',
+    // A level's own boss has its frames in the level atlas (loadFirebaseLevel
+    // tags it); the base game's bosses live in game_asset.
+    atlas: data.atlas || 'game_asset',
     frames: data.texture || [],
     animFrame: 0,
     animSpeed: 0.15,
@@ -142,8 +144,8 @@ export function createBoss(ctx: GameContext, data: BossData, stageId: number): B
   // Set dimensions from first frame
   if (b.frames.length > 0) {
     const size = ctx.atlas.getFrameSize(
-      'game_asset',
-      ctx.atlas.resolveFrameName('game_asset', b.frames[0]),
+      b.atlas,
+      ctx.atlas.resolveFrameName(b.atlas, b.frames[0]),
     )
     if (size.w > 0) {
       b.width = size.w
@@ -399,6 +401,9 @@ export function bossExplosionUpdate(ctx: GameContext, b: Boss): 0 | 1 {
 
 export function bossDraw(ctx: GameContext, b: Boss): void {
   if (!b.visible || b.alpha <= 0) return
+  // The boss's own frames come from its atlas; explosions from wherever they
+  // are — the level atlas when it carries them, the base sheet otherwise.
+  const ba = b.atlas || 'game_asset'
 
   if (b.explosionPlaying) {
     // Multiple staggered explosions
@@ -407,9 +412,12 @@ export function bossDraw(ctx: GameContext, b: Boss): void {
       const oy = Math.cos(i * 3.1) * 15
       const ef = Math.min((b.explosionTimer + i * 3) % 21 / 3, 6)
       const expFrame = 'explosion0' + String(Math.floor(ef)) + '.gif'
+      const expAtlas = ctx.atlas.hasFrame(ba, ctx.atlas.resolveFrameName(ba, expFrame))
+        ? ba
+        : 'game_asset'
       ctx.atlas.drawFrame(
-        'game_asset',
-        ctx.atlas.resolveFrameName('game_asset', expFrame),
+        expAtlas,
+        ctx.atlas.resolveFrameName(expAtlas, expFrame),
         ctx.vp.toX(b.x + b.width / 2 + ox),
         ctx.vp.toY(b.y + b.height / 2 + oy),
         ctx.vp.scale,
@@ -425,11 +433,11 @@ export function bossDraw(ctx: GameContext, b: Boss): void {
 
   // Draw shadow
   if (b.shadowVisible && b.frames.length > 0) {
-    const frame = ctx.atlas.resolveFrameName('game_asset', b.frames[b.animFrame])
+    const frame = ctx.atlas.resolveFrameName(ba, b.frames[b.animFrame])
     // dark-grey shadow: 30 on the original GS 128-neutral basis -> 60 here (255-neutral)
     const shadowColor = ctx.rt.Color.new(60, 60, 60, 60)
     ctx.atlas.drawFrame(
-      'game_asset',
+      ba,
       frame,
       ctx.vp.toX(b.x + b.width / 2),
       ctx.vp.toY(b.y + b.height / 2 + 5),
@@ -442,13 +450,13 @@ export function bossDraw(ctx: GameContext, b: Boss): void {
 
   // Draw boss
   if (b.frames.length > 0) {
-    const frame = ctx.atlas.resolveFrameName('game_asset', b.frames[b.animFrame])
+    const frame = ctx.atlas.resolveFrameName(ba, b.frames[b.animFrame])
     let tint: number | null = null
     if (b.tintFlash) {
       tint = ctx.rt.Color.new(255, 80, 80, 128)
     }
     ctx.atlas.drawFrame(
-      'game_asset',
+      ba,
       frame,
       ctx.vp.toX(b.x + b.width / 2),
       ctx.vp.toY(b.y + b.height / 2),
