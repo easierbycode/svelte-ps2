@@ -719,6 +719,14 @@ export function createGameScene(ctx: GameContext, net: NetService | null = null)
     if (!recipe || !recipe.enemyData) return
 
     const row = gs.stageEnemyList[gs.waveCount] || []
+    // Spread the row across the field, one cell per column, and centre each
+    // enemy in its cell — the browser engine's `cellW = GW / cols`. The base
+    // game's rows are 8 wide, so its cells stay 32 px and a 32 px enemy lands
+    // exactly where `32 * i` put it; a Dezaemon import's 20-column grid used
+    // to run off the right edge at 32 px per column, and everything past
+    // column 8 was culled before it was ever drawn.
+    const cols = row.length || 8
+    const cellW = GW / cols
     for (let i = 0; i < row.length; i++) {
       const code = String(row[i])
       if (code === '00') continue
@@ -734,7 +742,7 @@ export function createGameScene(ctx: GameContext, net: NetService | null = null)
       if (!eData) continue
 
       const enemy = createEnemy(ctx, eData)
-      enemy.x = 32 * i
+      enemy.x = cellW * i + cellW / 2 - enemy.width / 2
       enemy.y = -32
 
       // Assign item drop
