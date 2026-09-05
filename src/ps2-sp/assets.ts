@@ -22,12 +22,14 @@ interface FirebaseLevelData {
 // Normalize recipe: convert web game.json format to PS2 expected format
 // Web bosses use anim.idle/anim.attack; PS2 expects flat texture array
 // Web bosses use bulletData; PS2 expects projectileData
+// Idempotent: every step only fills in what is missing, so it is safe to run
+// again after a level has been merged over the recipe.
 function normalizeRecipe(recipe: Recipe | null): void {
-  if (!recipe || !recipe.bossData) return
+  if (!recipe) return
 
-  const bossKeys = Object.keys(recipe.bossData)
+  const bossKeys = recipe.bossData ? Object.keys(recipe.bossData) : []
   for (let i = 0; i < bossKeys.length; i++) {
-    const boss = recipe.bossData[bossKeys[i]]
+    const boss = recipe.bossData![bossKeys[i]]
 
     // Map anim.idle -> texture (for sprite animation)
     if ((!boss.texture || boss.texture.length === 0) && boss.anim) {
@@ -35,7 +37,8 @@ function normalizeRecipe(recipe: Recipe | null): void {
       boss.attackTexture = boss.anim.attack || []
     }
 
-    // Map bulletData -> projectileData
+    // Map bulletData -> projectileData, keeping the atlas the bullets were
+    // tagged with (a level's own bullets are in the level atlas)
     if (!boss.projectileData && boss.bulletData && boss.bulletData.texture) {
       boss.projectileData = {
         texture: boss.bulletData.texture || [],
@@ -43,6 +46,7 @@ function normalizeRecipe(recipe: Recipe | null): void {
         damage: boss.bulletData.damage || 1,
         hp: boss.bulletData.hp || 1,
         name: 'bullet',
+        ...(boss.bulletData.atlas ? { atlas: boss.bulletData.atlas } : {}),
       }
     }
 
@@ -67,6 +71,7 @@ function normalizeRecipe(recipe: Recipe | null): void {
           hp: enemy.bulletData.hp || 1,
           name: 'bullet',
           interval: enemy.bulletData.interval || 120,
+          ...(enemy.bulletData.atlas ? { atlas: enemy.bulletData.atlas } : {}),
         }
       }
     }
@@ -171,13 +176,16 @@ export function loadAllAssets(ctx: GameContext, options: ResolvedGameOptions): v
     ctx.state.recipe = createFallbackRecipe()
   }
 
-  // Normalize recipe: map web format -> PS2 format
-  normalizeRecipe(ctx.state.recipe)
-
   // Load and merge the pre-exported Firebase level
   if (options.level && ctx.state.recipe) {
     loadFirebaseLevel(ctx, ctx.state.recipe, options.level.dataPath)
   }
+
+  // Normalize recipe: map web format -> PS2 format. AFTER the merge, so the
+  // level's own bosses and enemies get it too: a Firebase boss carries
+  // anim.idle rather than texture, and used to reach createBoss with no
+  // frames at all; its enemies carried bulletData and never fired.
+  normalizeRecipe(ctx.state.recipe)
 
   // Initialize player data defaults from recipe
   if (ctx.state.recipe && ctx.state.recipe.playerData) {
